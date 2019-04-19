@@ -62,6 +62,14 @@ class PDFAnnotation;
 class PDFAnnotationTableView;
 class MessageFrame;
 
+class Dummy : public QLabel
+{
+    Q_OBJECT
+
+public:
+    Dummy(QWidget *parent);
+};
+
 class PDFMagnifier : public QLabel
 {
 	Q_OBJECT
@@ -150,6 +158,7 @@ public:
 	void restoreState();
 	void setResolution(int res);
 	void resetMagnifier();
+    void updateTrick();
 	Q_INVOKABLE int normalizedPageIndex(int pageIndex);
 	Q_INVOKABLE void goToPageDirect(int pageIndex, bool sync);
     Q_INVOKABLE void setHighlightPath(const int pageIndex, const QPainterPath &path, const bool dontRemove=false);
@@ -255,6 +264,7 @@ protected:
 	void tapEvent(QTapGesture *gesture);
 
 private:
+    friend class Dummy;
     friend class PDFMagnifier;
 
 	void init();
@@ -302,6 +312,7 @@ private:
 	qreal	imageDpi;
 	int	imagePage;
 
+    Dummy           *dummy;
 	PDFMagnifier	*magnifier;
 #ifdef PHONON
 	PDFMovie	*movie;

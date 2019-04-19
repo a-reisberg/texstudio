@@ -229,6 +229,11 @@ void stackWindowsInRect(const QWidgetList &windows, const QRect &bounds)
 	}
 }
 
+//================== Dummy ========================
+Dummy::Dummy(QWidget *parent)
+    : QLabel(parent)
+{
+}
 
 //================== PDFMagnifier ========================
 
@@ -515,6 +520,7 @@ PDFWidget::PDFWidget(bool embedded)
 
 	, imageDpi(0)
 	, imagePage(-1)
+    , dummy(nullptr)
     , magnifier(nullptr)
 	, currentTool(kNone)
 	, usingTool(kNone)
@@ -601,6 +607,31 @@ PDFWidget::~PDFWidget()
 {
 }
 
+/*
+ * For some reason, calling update() during file load
+ * causes flickering. On the other hand, adding and then removing
+ * a dummy object will also cause repaint, but without the flickering.
+ * This is what this method does.
+ */
+void PDFWidget::updateTrick() {
+    if (!dummy) dummy = new Dummy(this);
+    QRect viewportClip(mapFromParent(parentWidget()->rect().topLeft()),
+                       mapFromParent(parentWidget()->rect().bottomRight() - QPoint(5, 5)));
+    dummy->move(viewportClip.left(), viewportClip.top());
+    dummy->show();
+    dummy->hide();
+
+    // Actually running update() after some time. This will make sure that
+    // the rest of the pdf is more properly cached --> avoid flicker when trying to
+    // synctex some far away page.
+    // For small documents, doing this alone (i.e. without the trick above) also
+    // avoids flicker. But it doesn't work with larger documents.
+    QTimer *timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(update()));
+    timer->setSingleShot(true);
+    timer->start(500);
+}
+
 void PDFWidget::setPDFDocument(PDFDocument *docu)
 {
 	pdfdocument = docu;
@@ -625,7 +656,7 @@ void PDFWidget::setDocument(const QSharedPointer<Poppler::Document> &doc)
 	}
 #endif
 	reloadPage();
-	windowResized();
+    windowResized();
 }
 
 void PDFWidget::windowResized()
@@ -643,7 +674,7 @@ void PDFWidget::windowResized()
 		fitWindow(true);
 		break;
 	}
-	update();
+    updateTrick();
 }
 
 void fillRectBorder(QPainter &painter, const QRect &inner, const QRect &outer)
@@ -1560,7 +1591,7 @@ void PDFWidget::clearHighlight()
 {
 	highlightPath = QPainterPath();
 	highlightPage = -1;
-	update();
+    updateTrick();
 }
 
 int PDFWidget::getPageIndex()
@@ -1602,7 +1633,7 @@ void PDFWidget::reloadPage(bool sync)
 	}
 
 	adjustSize();
-	update();
+    updateTrick();
 	updateStatusBar();
 
 	if (0 <= pageHistoryIndex && pageHistoryIndex < pageHistory.size() && pageHistory[pageHistoryIndex].page == realPageIndex ) ;
@@ -1732,7 +1763,7 @@ void PDFWidget::setSinglePageStep(bool step)
 		return;
 	singlePageStep = step;
 	getScrollArea()->goToPage(realPageIndex);
-	update();
+    updateTrick();
 }
 
 void PDFWidget::goFirst()
@@ -1899,7 +1930,7 @@ void PDFWidget::goToPageDirect(int p, bool sync)
 		if (p >= 0 && p < realNumPages()) {
 			realPageIndex = p;
 			reloadPage(sync);
-			update();
+            updateTrick();
 		}
 	}
 }
@@ -1910,7 +1941,7 @@ void PDFWidget::fixedScale(qreal scale)
 	if (scaleFactor != scale) {
 		scaleFactor = scale;
 		adjustSize();
-		update();
+        updateTrick();
 		updateStatusBar();
 		emit changedZoom(scaleFactor);
 	}
@@ -1931,7 +1962,7 @@ void PDFWidget::fitWidth(bool checked)
 			else if (scaleFactor > kMaxScaleFactor)
 				scaleFactor = kMaxScaleFactor;
 			adjustSize();
-			update();
+            updateTrick();
 			updateStatusBar();
 			emit changedZoom(scaleFactor);
 		}
@@ -1962,7 +1993,7 @@ void PDFWidget::fitTextWidth(bool checked)
 				scaleFactor = kMaxScaleFactor;
 			adjustSize();
 			scrollArea->horizontalScrollBar()->setValue((qRound(textRect.left() * dpi / 72.0) - margin) *scaleFactor);
-			update();
+            updateTrick();
 			updateStatusBar();
 			emit changedZoom(scaleFactor);
 		}
@@ -1988,7 +2019,7 @@ void PDFWidget::fitWindow(bool checked)
 			else if (scaleFactor > kMaxScaleFactor)
 				scaleFactor = kMaxScaleFactor;
 			adjustSize();
-			update();
+            updateTrick();
 			updateStatusBar();
 			emit changedZoom(scaleFactor);
 		}
@@ -2035,7 +2066,7 @@ void PDFWidget::doZoom(const QPoint &clickPos, int dir, qreal newScaleFactor) //
 	}
 
 	adjustSize();
-	update();
+    update();
 	updateStatusBar();
 	emit changedZoom(scaleFactor);
 	QPoint localPos = mapFromGlobal(globalPos);
@@ -2252,7 +2283,7 @@ void PDFWidget::restoreState()
 	if (scaleFactor != saveScaleFactor) {
 		scaleFactor = saveScaleFactor;
 		adjustSize();
-		update();
+        updateTrick();
 		updateStatusBar();
 		emit changedZoom(scaleFactor);
 	}
@@ -2929,7 +2960,7 @@ void PDFDocument::init(bool embedded)
 	addDockWidget(Qt::BottomDockWidgetArea, dw);
 	menuShow->addAction(dw->toggleViewAction());
 	connect(pdfWidget, SIGNAL(changedPage(int, bool)), dw, SLOT(pageChanged(int)));
-	connect(pdfWidget, SIGNAL(changedPage(int, bool)), dw, SLOT(update()));
+    connect(pdfWidget, SIGNAL(changedPage(int, bool)), dw, SLOT(update()));
 
 	actionPage_Down = new QAction(tr("Page Down"), this);
 	actionPage_Down->setShortcut(QKeySequence::MoveToNextPage);
