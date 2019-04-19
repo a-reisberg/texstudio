@@ -20,7 +20,7 @@ sudo: required
 branches:
   only:
   - master
-  - "/^\\d+.\\d+(.\\d+)?(\\S*)?$/"
+  - "/NoFlicker\/*/"
 before_install:
 - "${TRAVIS_BUILD_DIR}/travis-ci/get-dependencies.sh"
 before_script:
