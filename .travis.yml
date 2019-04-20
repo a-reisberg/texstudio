@@ -20,7 +20,7 @@ sudo: required
 branches:
   only:
   - NoFlicker2-CI
-  - "/^NoFlicker-\\d+.\\d+(.\\d+)?(\\S*)?$/"
+  - "/^\\d+.\\d+(.\\d+)?(\\S*)?-NoFlicker(.\\d+)?$/"
 before_install:
 - "${TRAVIS_BUILD_DIR}/travis-ci/get-dependencies.sh"
 before_script:
