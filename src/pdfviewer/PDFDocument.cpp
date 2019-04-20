@@ -633,9 +633,12 @@ void PDFWidget::delayedUpdate() {
                                                   true, true);
             }
         }
-    }
 
-    update();
+        QTimer *timer = new QTimer(this);
+        connect(timer, SIGNAL(timeout()), this, SLOT(update()));
+        timer->setSingleShot(true);
+        timer->start(5);
+    }
 }
 
 void PDFWidget::setPDFDocument(PDFDocument *docu)
