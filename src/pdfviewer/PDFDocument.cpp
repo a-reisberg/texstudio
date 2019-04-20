@@ -293,7 +293,7 @@ void PDFMagnifier::setPage(int pageNr, qreal scale, const QRect &visibleRect)
 
 			}
 		}
-	}
+    }
 	update();
 }
 
@@ -633,12 +633,12 @@ void PDFWidget::delayedUpdate() {
                                                   true, true);
             }
         }
-
-        QTimer *timer = new QTimer(this);
-        connect(timer, SIGNAL(timeout()), this, SLOT(update()));
-        timer->setSingleShot(true);
-        timer->start(5);
     }
+
+    QTimer *timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(update()));
+    timer->setSingleShot(true);
+    timer->start(10);
 }
 
 void PDFWidget::setPDFDocument(PDFDocument *docu)
