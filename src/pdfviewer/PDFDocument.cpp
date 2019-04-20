@@ -618,12 +618,7 @@ void PDFWidget::delayedUpdate() {
         doc->renderManager->renderToImage(pageNr, nullptr, "", dpi * scaleFactor * overScale, dpi * scaleFactor * overScale,
             0, 0, newRect.width() * overScale, newRect.height() * overScale, true, true);
 
-    QTimer *timer = new QTimer(this);
-    timer->setSingleShot(true);
-    connect(timer, SIGNAL(timeout()), this, SLOT(update()));
-    timer->start(250);
-
-    // update();
+    update();
 }
 
 void PDFWidget::setPDFDocument(PDFDocument *docu)
