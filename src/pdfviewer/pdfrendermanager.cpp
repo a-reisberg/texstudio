@@ -18,6 +18,8 @@
 
 const int kMaxPageZoom = 1000000;
 
+const int initCacheDpi = 72;
+
 // maximal resolution for rendering
 // example: 192dpi with 4x magnification requires 768dpi rendering resolution
 // rendering at high resolutions may be slow. On the other hand, we expect
@@ -246,6 +248,8 @@ QSharedPointer<Poppler::Document> PDFRenderManager::loadDocument(const QString &
 
 QPixmap PDFRenderManager::renderToImage(int pageNr, QObject *obj, const char *rec, double xres, double yres, int x, int y, int w, int h, bool cache, bool priority, int delayTimeout, Poppler::Page::Rotation rotate)
 {
+    qDebug() << xres << " " << yres;
+    qDebug() << renderedPages.totalCost();
 	if (document.isNull()) return QPixmap();
 	if (pageNr < 0 || pageNr >= cachedNumPages) return QPixmap();
 	RecInfo info;
@@ -273,7 +277,12 @@ QPixmap PDFRenderManager::renderToImage(int pageNr, QObject *obj, const char *re
 	CachePixmap img;
 	qreal scale = 10;
 	bool partialImage = false;
-	if (renderedPages.contains(pageNr + kMaxPageZoom) && xres > kMaxDpiForFullPage) { // try cache first
+
+    // Here is the cache layout: for a page with page number pageNr, it will be stored at
+    // * pageNo + kMaxPageZoom if xres > kMaxDpiForFullPage.
+    // * -pageNo - 1 if its xres <= initCacheDpi (which is 72)
+    // * pageNo otherwise
+    if (renderedPages.contains(pageNr + kMaxPageZoom) && xres > kMaxDpiForFullPage) { // try cache first. First case: very large image.
 		CachePixmap *cachedPix = renderedPages[pageNr + kMaxPageZoom];
 		if (cachedPix->getCoord() == QPoint(x, y) && cachedPix->getRes() < 1.01 * xres && cachedPix->getRes() > 0.99 * xres && cachedPix->width() == w && cachedPix->height() == h) {
 			img = *cachedPix;
@@ -281,9 +290,11 @@ QPixmap PDFRenderManager::renderToImage(int pageNr, QObject *obj, const char *re
 			enqueueCmd = false;
 		}
 	}
-	if (img.isNull() && renderedPages.contains(pageNr)) { // try cache first
+    if (img.isNull() && renderedPages.contains(pageNr)) // try cache first. Second case: usual size.
 		img = *renderedPages[pageNr];
-	}
+
+    if (img.isNull() && renderedPages.contains(-pageNr - 1)) // try cache first. Third case: small size (res <= initCacheDpi).
+        img = *renderedPages[-pageNr - 1];
 
     // delayTimeout = -1 means it's NOT been called by delayedUpdate
     // delayTimeout >= 0 means it's been called called by delayedUpdate and delayedUpdate wants to force an update after delayTimeout
@@ -314,6 +325,8 @@ QPixmap PDFRenderManager::renderToImage(int pageNr, QObject *obj, const char *re
 			if (cache) {
 				if (xres > kMaxDpiForFullPage)
 					pageNr = pageNr + kMaxPageZoom;
+                if (xres <= initCacheDpi)
+                    pageNr = -pageNr - 1;
 				CachePixmap *image = new CachePixmap(img);
 				image->setRes(xres, x, y);
 				int sizeInMB = qCeil(image->width() * image->height() * image->depth() / 8388608.0);  // 8(bits depth -> bytes) * 1024**2 (bytes -> MB)
@@ -401,6 +414,8 @@ void PDFRenderManager::addToCache(QImage img, int pageNr, int ticket)
 			if (info.cache) {
 				if (info.xres > kMaxDpiForFullPage)
 					pageNr = pageNr + kMaxPageZoom;
+                if (info.xres <= initCacheDpi)
+                    pageNr = -pageNr - 1;
 				CachePixmap *image = new CachePixmap(QPixmap::fromImage(img));
 				image->setRes(info.xres, info.x, info.y);
 				int sizeInMB = qCeil(image->width() * image->height() * image->depth() / 8388608.0);  // 8(bits depth -> bytes) * 1024**2 (bytes -> MB)
@@ -438,6 +453,7 @@ qreal PDFRenderManager::getResLimit()
 
 void PDFRenderManager::fillCache(int pg)
 {
+    qDebug() << "fillCache called " << pg;
 	if (document.isNull()) return;
 	QSet<int> renderedPage;
 	foreach (RecInfo elem, lstOfReceivers) {

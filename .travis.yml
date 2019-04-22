@@ -19,8 +19,8 @@ dist: xenial
 sudo: required
 branches:
   only:
-  - NoFlicker2-CI
-  - "/^\\d+.\\d+(.\\d+)?(\\S*)?-NoFlicker(.\\d+)?$/"
+  - SmarterCache-CI
+  - "/^\\d+.\\d+(.\\d+)?(\\S*)?-SmarterCache(.\\d+)?$/"
 before_install:
 - "${TRAVIS_BUILD_DIR}/travis-ci/get-dependencies.sh"
 before_script:
