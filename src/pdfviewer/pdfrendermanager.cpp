@@ -248,9 +248,7 @@ QSharedPointer<Poppler::Document> PDFRenderManager::loadDocument(const QString &
 
 QPixmap PDFRenderManager::renderToImage(int pageNr, QObject *obj, const char *rec, double xres, double yres, int x, int y, int w, int h, bool cache, bool priority, int delayTimeout, Poppler::Page::Rotation rotate)
 {
-    qDebug() << xres << " " << yres;
-    qDebug() << renderedPages.totalCost();
-	if (document.isNull()) return QPixmap();
+    if (document.isNull()) return QPixmap();
 	if (pageNr < 0 || pageNr >= cachedNumPages) return QPixmap();
 	RecInfo info;
 	info.obj = obj;
@@ -453,7 +451,6 @@ qreal PDFRenderManager::getResLimit()
 
 void PDFRenderManager::fillCache(int pg)
 {
-    qDebug() << "fillCache called " << pg;
 	if (document.isNull()) return;
 	QSet<int> renderedPage;
 	foreach (RecInfo elem, lstOfReceivers) {

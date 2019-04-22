@@ -3130,7 +3130,6 @@ void PDFDocument::loadFile(const QString &fileName, QFileInfo masterFile, Displa
 
 void PDFDocument::fillRenderCache(int pg)
 {
-    qDebug() << "fillRenderCache called";
 	if (renderManager)
 		renderManager->fillCache(pg);
 }
