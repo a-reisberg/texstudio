@@ -1662,6 +1662,7 @@ void PDFWidget::reloadPage(bool sync)
 		pageHistoryIndex = pageHistory.size() - 1;
 	}
 
+	getPDFDocument()->fillRenderCache();
 	emit changedPage(realPageIndex, sync);
 }
 

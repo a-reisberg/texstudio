@@ -703,6 +703,7 @@ void PDFScrollArea::setContinuous(bool cont)
 
 void PDFScrollArea::goToPage(int page, bool sync)
 {
+	pdf->getPDFDocument()->fillRenderCache(page);
 	if (continuous) {
 		int rowHeight = pdf->gridRowHeight();
 		verticalScrollBar()->setValue((page / pdf->gridCols())  * rowHeight);

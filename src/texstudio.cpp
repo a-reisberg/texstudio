@@ -5740,8 +5740,7 @@ void Texstudio::runInternalPdfViewer(const QFileInfo &master, const QString &opt
 	}
 	foreach (PDFDocument *viewer, oldPDFs) {
 		viewer->loadFile(pdfFile, master, displayPolicy);
-		int pg = viewer->syncFromSource(getCurrentFileName(), ln, col, displayPolicy);
-		viewer->fillRenderCache(pg);
+		viewer->syncFromSource(getCurrentFileName(), ln, col, displayPolicy);
         if (viewer->embeddedMode && configManager.viewerEnlarged) {
             sidePanelSplitter->hide();
 			viewer->setStateEnlarged(true);
