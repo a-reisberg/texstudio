@@ -429,6 +429,9 @@ void PDFRenderManager::addToCache(QImage img, int pageNr, int ticket)
 				image->setRes(info.xres, info.x, info.y);
 				int sizeInMB = qCeil(image->width() * image->height() * image->depth() / 8388608.0);  // 8(bits depth -> bytes) * 1024**2 (bytes -> MB)
 				renderedPages.insert(pageNr, image, sizeInMB);
+
+				if (pageNr >= 0 && pageNr < kMaxDpiForFullPage)
+					renderedPages.remove(-pageNr - 1); // Delete lower res version if presents
 			}
 			if (info.obj) {
 				if (info.x > -1 && info.y > -1 && info.w > -1 && info.h > -1 && !(info.xres > kMaxDpiForFullPage))
@@ -475,14 +478,14 @@ void PDFRenderManager::fillCache(int pg)
 	int j = pg;
 	if (j < 0)
 		j = -1;
-	const int MAX_CACHE_OFFSET = 20; // disables filling of overview dock ...
+	const int MAX_CACHE_OFFSET = 10; // disables filling of overview dock ...
 	int max = qMin(cachedNumPages, pg + MAX_CACHE_OFFSET);
 	int min = qMax(0, pg - MAX_CACHE_OFFSET);
 	while (i >= min || j < max) {
 		j++;
-		if (i >= min && i < max && !renderedPage.contains(i)) // don't rerender page
+		if (i >= min && i < max && !renderedPage.contains(i) && !renderedPage.contains(-i - 1)) // don't rerender page
             renderToImage(i, nullptr, "");
-		if (j >= min && j < max && !renderedPage.contains(j)) // don't rerender page
+		if (j >= min && j < max && !renderedPage.contains(j) && !renderedPage.contains(-i - 1)) // don't rerender page
             renderToImage(j, nullptr, "");
 		i--;
 	}

@@ -1650,6 +1650,7 @@ void PDFWidget::reloadPage(bool sync)
 
 	adjustSize();
     delayedUpdate();
+	getPDFDocument()->fillRenderCache(!pages.isEmpty() ? pages.first() : -1);
 	updateStatusBar();
 
 	if (0 <= pageHistoryIndex && pageHistoryIndex < pageHistory.size() && pageHistory[pageHistoryIndex].page == realPageIndex ) ;
@@ -1662,7 +1663,6 @@ void PDFWidget::reloadPage(bool sync)
 		pageHistoryIndex = pageHistory.size() - 1;
 	}
 
-	getPDFDocument()->fillRenderCache();
 	emit changedPage(realPageIndex, sync);
 }
 
