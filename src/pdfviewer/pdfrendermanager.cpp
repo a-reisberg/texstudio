@@ -18,8 +18,6 @@
 
 const int kMaxPageZoom = 1000000;
 
-const int initCacheDpi = 72;
-
 // maximal resolution for rendering
 // example: 192dpi with 4x magnification requires 768dpi rendering resolution
 // rendering at high resolutions may be slow. On the other hand, we expect
@@ -262,7 +260,7 @@ QSharedPointer<Poppler::Document> PDFRenderManager::loadDocument(const QString &
 
 QPixmap PDFRenderManager::renderToImage(int pageNr, QObject *obj, const char *rec, double xres, double yres, int x, int y, int w, int h, bool cache, bool priority, int delayTimeout, Poppler::Page::Rotation rotate)
 {
-    if (document.isNull()) return QPixmap();
+	if (document.isNull()) return QPixmap();
 	if (pageNr < 0 || pageNr >= cachedNumPages) return QPixmap();
 	RecInfo info;
 	info.obj = obj;
@@ -289,12 +287,7 @@ QPixmap PDFRenderManager::renderToImage(int pageNr, QObject *obj, const char *re
 	CachePixmap img;
 	qreal scale = 10;
 	bool partialImage = false;
-
-    // Here is the cache layout: for a page with page number pageNr, it will be stored at
-    // * pageNo + kMaxPageZoom if xres > kMaxDpiForFullPage.
-    // * -pageNo - 1 if its xres <= initCacheDpi (which is 72)
-    // * pageNo otherwise
-    if (renderedPages.contains(pageNr + kMaxPageZoom) && xres > kMaxDpiForFullPage) { // try cache first. First case: very large image.
+	if (renderedPages.contains(pageNr + kMaxPageZoom) && xres > kMaxDpiForFullPage) { // try cache first
 		CachePixmap *cachedPix = renderedPages[pageNr + kMaxPageZoom];
 		if (cachedPix->getCoord() == QPoint(x, y) && cachedPix->getRes() < 1.01 * xres && cachedPix->getRes() > 0.99 * xres && cachedPix->width() == w && cachedPix->height() == h) {
 			img = *cachedPix;
@@ -302,11 +295,9 @@ QPixmap PDFRenderManager::renderToImage(int pageNr, QObject *obj, const char *re
 			enqueueCmd = false;
 		}
 	}
-    if (img.isNull() && renderedPages.contains(pageNr)) // try cache first. Second case: usual size.
+	if (img.isNull() && renderedPages.contains(pageNr)) { // try cache first
 		img = *renderedPages[pageNr];
-
-    if (img.isNull() && renderedPages.contains(-pageNr - 1)) // try cache first. Third case: small size (res <= initCacheDpi).
-        img = *renderedPages[-pageNr - 1];
+	}
 
     // delayTimeout = -1 means it's NOT been called by delayedUpdate
     // delayTimeout >= 0 means it's been called called by delayedUpdate and delayedUpdate wants to force an update after delayTimeout
@@ -334,8 +325,6 @@ QPixmap PDFRenderManager::renderToImage(int pageNr, QObject *obj, const char *re
 			if (cache) {
 				if (xres > kMaxDpiForFullPage)
 					pageNr = pageNr + kMaxPageZoom;
-                if (xres <= initCacheDpi)
-                    pageNr = -pageNr - 1;
 				CachePixmap *image = new CachePixmap(img);
 				image->setRes(xres, x, y);
 				int sizeInMB = qCeil(image->width() * image->height() * image->depth() / 8388608.0);  // 8(bits depth -> bytes) * 1024**2 (bytes -> MB)
@@ -423,15 +412,10 @@ void PDFRenderManager::addToCache(QImage img, int pageNr, int ticket)
 			if (info.cache) {
 				if (info.xres > kMaxDpiForFullPage)
 					pageNr = pageNr + kMaxPageZoom;
-                if (info.xres <= initCacheDpi)
-                    pageNr = -pageNr - 1;
 				CachePixmap *image = new CachePixmap(QPixmap::fromImage(img));
 				image->setRes(info.xres, info.x, info.y);
 				int sizeInMB = qCeil(image->width() * image->height() * image->depth() / 8388608.0);  // 8(bits depth -> bytes) * 1024**2 (bytes -> MB)
 				renderedPages.insert(pageNr, image, sizeInMB);
-
-				if (pageNr >= 0 && pageNr < kMaxDpiForFullPage)
-					renderedPages.remove(-pageNr - 1); // Delete lower res version if presents
 			}
 			if (info.obj) {
 				if (info.x > -1 && info.y > -1 && info.w > -1 && info.h > -1 && !(info.xres > kMaxDpiForFullPage))
@@ -478,14 +462,14 @@ void PDFRenderManager::fillCache(int pg)
 	int j = pg;
 	if (j < 0)
 		j = -1;
-	const int MAX_CACHE_OFFSET = 10; // disables filling of overview dock ...
+	const int MAX_CACHE_OFFSET = 20; // disables filling of overview dock ...
 	int max = qMin(cachedNumPages, pg + MAX_CACHE_OFFSET);
 	int min = qMax(0, pg - MAX_CACHE_OFFSET);
 	while (i >= min || j < max) {
 		j++;
-		if (i >= min && i < max && !renderedPage.contains(i) && !renderedPage.contains(-i - 1)) // don't rerender page
+		if (i >= min && i < max && !renderedPage.contains(i)) // don't rerender page
             renderToImage(i, nullptr, "");
-		if (j >= min && j < max && !renderedPage.contains(j) && !renderedPage.contains(-i - 1)) // don't rerender page
+		if (j >= min && j < max && !renderedPage.contains(j)) // don't rerender page
             renderToImage(j, nullptr, "");
 		i--;
 	}
